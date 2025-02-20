@@ -12,8 +12,8 @@ import java.util.UUID;
 public class Admin extends User {
     private String password;
 
-    public Admin(UUID id, String name, String password) {
-        super(id, name, UserRole.Admin);
+    public Admin(String name, String password) {
+        super(name, UserRole.Admin);
         this.password = password;
     }
 }

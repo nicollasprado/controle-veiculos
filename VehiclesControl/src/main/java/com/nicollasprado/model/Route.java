@@ -15,8 +15,7 @@ public class Route extends Entity {
     private BigDecimal fuelRequiredPrice;
     private BigDecimal otherCosts;
 
-    public Route(UUID id, String startLocation, String finalLocation, BigDecimal fuelRequiredPrice, BigDecimal otherCosts) {
-        super(id);
+    public Route(String startLocation, String finalLocation, BigDecimal fuelRequiredPrice, BigDecimal otherCosts) {
         this.startLocation = startLocation;
         this.finalLocation = finalLocation;
         this.fuelRequiredPrice = fuelRequiredPrice;

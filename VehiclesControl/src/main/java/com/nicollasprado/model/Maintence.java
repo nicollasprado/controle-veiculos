@@ -15,8 +15,7 @@ public class Maintence extends Entity {
     private LocalDateTime dateTime;
     private BigDecimal price;
 
-    public Maintence(UUID id, Vehicle vehicle, LocalDateTime dateTime, BigDecimal price) {
-        super(id);
+    public Maintence(Vehicle vehicle, LocalDateTime dateTime, BigDecimal price) {
         this.vehicle = vehicle;
         this.dateTime = dateTime;
         this.price = price;

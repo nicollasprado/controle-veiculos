@@ -1,30 +1,43 @@
 package com.nicollasprado.db;
 
+import com.nicollasprado.Exceptions.EntityNotFoundException;
+import com.nicollasprado.Exceptions.TypeInferException;
+import com.nicollasprado.abstraction.Entity;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.HashSet;
-import java.util.Properties;
+import java.util.*;
 
 import java.sql.*;
-import java.util.Set;
 
-public class Query {
+public class Query<T extends Entity> {
 
-    // TODO - Arrumar os retornos
     // https://jdbc.postgresql.org/documentation/query/
 
 
-    public Set<Object> StandartQuery(String query){
+    public List<String> StandartQuery(String query){
         Connection conn = this.dbConnect();
 
         try{
-            Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery(query);
+            PreparedStatement st = conn.prepareStatement(query);
 
-            Set<Object> result = new HashSet<>();
+            ResultSet rs = st.executeQuery();
+            ResultSetMetaData resultSetMetaData = rs.getMetaData();
 
-            while(rs.next()){
-                result.add(rs.getRow());
+            List<String> result = new ArrayList<>();
+
+            Type genericType = this.getGenericType();
+            System.out.println(genericType.getTypeName());
+
+            if(!rs.next()){
+                throw new EntityNotFoundException();
+            }
+
+            for(int i=1; i <= resultSetMetaData.getColumnCount(); i++){
+                System.out.println(rs.getString(i));
+                result.add(rs.getString(i));
             }
 
             st.close();
@@ -37,13 +50,25 @@ public class Query {
         }
     }
 
+    private Type getGenericType(){
+        // return Query<TYPE>
+        Type type = this.getClass().getGenericSuperclass();
+
+        // Verify if the class is Parametizes (if have <Type>)
+        if(!(type instanceof ParameterizedType)){
+            throw new TypeInferException();
+        }
+
+        // Return the type from an array of types <String, int> [0] = string  [1] == int
+        return ((ParameterizedType) type).getActualTypeArguments()[0];
+    }
+
     private Connection dbConnect(){
         try{
-            String url = "jdbc:postgresql://localhost:8080/vehicles_control";
+            String url = "jdbc:postgresql://localhost:5432/vehicles_control";
             Properties props = new Properties();
             props.setProperty("user", "postgres");
             props.setProperty("password", "");
-            props.setProperty("ssl", "true");
 
             return DriverManager.getConnection(url, props);
         }catch (SQLException e){

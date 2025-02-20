@@ -14,8 +14,7 @@ public class Vehicle extends Entity {
     private Set<Route> routes;
     private Maintence nextMaintence;
 
-    public Vehicle(UUID id, String name, Set<Route> routes, Maintence nextMaintence) {
-        super(id);
+    public Vehicle(String name, Set<Route> routes, Maintence nextMaintence) {
         this.name = name;
         this.routes = routes;
         this.nextMaintence = nextMaintence;

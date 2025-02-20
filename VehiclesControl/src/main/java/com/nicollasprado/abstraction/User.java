@@ -9,12 +9,12 @@ import java.util.UUID;
 @Getter
 @Setter
 public abstract class User extends Entity {
-    private String name;
+    private String username;
     private UserRole userRole;
 
-    public User(UUID id, String name, UserRole role) {
-        super(id);
-        this.name = name;
+    public User(String username, UserRole role) {
+        super();
+        this.username = username;
         this.userRole = role;
     }
 }
