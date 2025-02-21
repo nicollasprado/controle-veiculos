@@ -2,10 +2,12 @@ package com.nicollasprado.model;
 
 import com.nicollasprado.abstraction.Entity;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class Teste extends Entity {
     private String name;
     private Integer num;

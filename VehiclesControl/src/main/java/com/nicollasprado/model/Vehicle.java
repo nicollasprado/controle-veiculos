@@ -2,6 +2,7 @@ package com.nicollasprado.model;
 
 import com.nicollasprado.abstraction.Entity;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Set;
@@ -9,6 +10,7 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class Vehicle extends Entity {
     private String name;
     private Set<Route> routes;
