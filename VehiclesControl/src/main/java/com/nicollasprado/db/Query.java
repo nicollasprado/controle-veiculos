@@ -1,9 +1,11 @@
 package com.nicollasprado.db;
 
-import com.nicollasprado.Exceptions.EntityNotFoundException;
+import com.nicollasprado.Exceptions.InvalidQueryType;
 import com.nicollasprado.abstraction.Entity;
-import com.nicollasprado.db.abstractions.ReturnClassHandler;
+import com.nicollasprado.db.utils.EntityUtils;
+import com.nicollasprado.db.utils.StatementUtils;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
@@ -15,7 +17,60 @@ import java.sql.*;
 public class Query<T extends Entity, R> {
     private final Class<T> entityClass;
     private final Class<R> returnClass;
+    private final Field idField;
+    private final String entityName;
 
+
+    public <X> R findById(X id){
+        return refinedGetQuery("SELECT * FROM " + this.entityName + " WHERE " + idField.getName() + " = ? LIMIT 1", List.of(id));
+    }
+
+    private void refinedTransactionalQuery(String query, List<?> parameters){
+        Connection conn = this.dbConnect();
+
+        PreparedStatement statement = StatementUtils.getValidStatement(conn, query, parameters);
+
+        try{
+            conn.setAutoCommit(false);
+            String upperQuery = query.toUpperCase();
+            if(upperQuery.contains("UPDATE") || upperQuery.contains("DELETE") || upperQuery.contains("INSERT")){
+                statement.executeUpdate();
+                conn.commit();
+            }
+
+            conn.close();
+            statement.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private R refinedGetQuery(String query, List<?> parameters){
+        Connection conn = this.dbConnect();
+
+        PreparedStatement statement = StatementUtils.getValidStatement(conn, query, parameters);
+
+        ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
+
+        try{
+            String upperQuery = query.toUpperCase();
+            if(!upperQuery.contains("UPDATE") && !upperQuery.contains("DELETE") && !upperQuery.contains("INSERT")){
+                ResultSet fetchResult = statement.executeQuery();
+
+                returnClassHandler.databaseDataToEntityInstance(fetchResult);
+
+                statement.close();
+                fetchResult.close();
+                conn.close();
+
+                return returnClassHandler.getReturnClassInstance();
+            }
+
+            throw new InvalidQueryType(query);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while fetching data: " + e.getMessage());
+        }
+    }
 
     // BECAREFUL USING THIS! MAY BE VULNARABLE TO SQL INJECTION
     public R RawQuery(String query){
@@ -25,21 +80,9 @@ public class Query<T extends Entity, R> {
 
         try{
             PreparedStatement st = conn.prepareStatement(query);
-
             ResultSet rs = st.executeQuery();
-            ResultSetMetaData resultSetMetaData = rs.getMetaData();
 
-            if(!rs.next()){
-                throw new EntityNotFoundException();
-            }
-
-            for(int i=1; i <= resultSetMetaData.getColumnCount(); i++){
-                int columnType = resultSetMetaData.getColumnType(i);
-                String columnName = resultSetMetaData.getColumnName(i);
-
-                Object value = this.getColumnValueWithCorrespondentType(rs, columnType, i);
-                returnClassHandler.fillEntityInstance(value, columnName);
-            }
+            returnClassHandler.databaseDataToEntityInstance(rs);
 
             st.close();
             rs.close();
@@ -51,24 +94,6 @@ public class Query<T extends Entity, R> {
         }
     }
 
-    // Not the best way to do this but the easiest to now
-    private Object getColumnValueWithCorrespondentType(ResultSet queryResult, int columnType, int columnIndex){
-        try{
-            return switch (columnType) {
-                case Types.VARCHAR -> queryResult.getString(columnIndex);
-                case Types.INTEGER -> queryResult.getInt(columnIndex);
-                case Types.DOUBLE -> queryResult.getDouble(columnIndex);
-                case Types.FLOAT -> queryResult.getFloat(columnIndex);
-                case Types.TIMESTAMP -> queryResult.getTimestamp(columnIndex);
-                case Types.DATE -> queryResult.getDate(columnIndex);
-                case Types.ARRAY -> queryResult.getArray(columnIndex);
-                case Types.BOOLEAN -> queryResult.getBoolean(columnIndex);
-                default -> null;
-            };
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while trying to get column value: ", e);
-        }
-    }
 
     private Connection dbConnect(){
         try{
@@ -86,11 +111,15 @@ public class Query<T extends Entity, R> {
 
     @SuppressWarnings("unchecked")
     public Query(Class<T> entityClass){
-        this(entityClass, (Class<R>) entityClass);
+        this.entityClass = entityClass;
+        this.returnClass = (Class<R>) entityClass;
+        this.idField = EntityUtils.getIdField(entityClass);
+        this.entityName = EntityUtils.getEntityName(entityClass);
     }
 
-    public Query(Class<T> entityClass, Class<R> returnClass){
-        this.entityClass = entityClass;
-        this.returnClass = returnClass;
-    }
+    // TODO - CREATE WAY TO WORK WITH RECORDS
+//    public Query(Class<T> entityClass, Class<R> returnClass){
+//        this.entityClass = entityClass;
+//        this.returnClass = returnClass;
+//    }
 }
