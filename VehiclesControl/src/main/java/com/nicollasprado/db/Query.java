@@ -21,9 +21,40 @@ public class Query<T extends Entity, R> {
     private final String entityName;
 
 
+    public void save(T entity){
+        List<Field> columnFields = EntityUtils.getColumnFields(entityClass);
+
+        StringBuilder columnsNames = new StringBuilder("(");
+        for(int i = 0; i < columnFields.size(); i++){
+            if(i == columnFields.size() - 1){
+                columnsNames.append(EntityUtils.getColumnFieldName(columnFields.get(i))).append(")");
+            }else{
+                columnsNames.append(EntityUtils.getColumnFieldName(columnFields.get(i))).append(", ");
+            }
+        }
+
+        StringBuilder paramsEntries = new StringBuilder("(");
+        for(int i = 0; i < columnFields.size(); i++){
+            if(i == columnFields.size() - 1){
+                paramsEntries.append("?)");
+            }else{
+                paramsEntries.append("?, ");
+            }
+        }
+
+        String query = "INSERT INTO " + this.entityName + " " + columnsNames + " VALUES " + paramsEntries + ";";
+
+        List<Object> params = new ArrayList<>();
+        columnFields.forEach(field -> params.add(EntityUtils.getColumnValue(field, entity)));
+
+        refinedTransactionalQuery(query, params);
+    }
+
     public <X> R findById(X id){
         return refinedGetQuery("SELECT * FROM " + this.entityName + " WHERE " + idField.getName() + " = ? LIMIT 1", List.of(id));
     }
+
+
 
     private void refinedTransactionalQuery(String query, List<?> parameters){
         Connection conn = this.dbConnect();
@@ -41,7 +72,7 @@ public class Query<T extends Entity, R> {
             conn.close();
             statement.close();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error while saving entity: " + e);
         }
     }
 

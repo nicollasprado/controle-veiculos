@@ -12,6 +12,10 @@ public class Main {
         Teste retorno = testeQuery.RawQuery("SELECT * FROM teste WHERE num = '" + teste.getNum() + "' AND name = '" + teste.getName() + "'");
 
         System.out.println(retorno.getName() + " " + retorno.getId() + " " + retorno.getNum());
-        System.out.println(testeQuery.findById(teste.getNum()).getName());
+        System.out.println(testeQuery.findById(teste.getName()).getName());
+
+        Teste teste2 = new Teste("teste2", 500);
+        testeQuery.save(teste2);
+        System.out.println(testeQuery.findById(teste2.getName()).getName());
     }
 }
