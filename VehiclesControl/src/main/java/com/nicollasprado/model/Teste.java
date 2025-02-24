@@ -1,6 +1,7 @@
 package com.nicollasprado.model;
 
 import com.nicollasprado.abstraction.Entity;
+import com.nicollasprado.db.annotations.Id;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class Teste extends Entity {
+    @Id
     private String name;
     private Integer num;
 
