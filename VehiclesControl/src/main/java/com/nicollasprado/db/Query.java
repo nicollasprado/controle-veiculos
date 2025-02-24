@@ -2,27 +2,26 @@ package com.nicollasprado.db;
 
 import com.nicollasprado.Exceptions.EntityNotFoundException;
 import com.nicollasprado.abstraction.Entity;
+import com.nicollasprado.db.abstractions.ReturnClassHandler;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
 
 import java.sql.*;
 
+// https://jdbc.postgresql.org/documentation/query/
+
 public class Query<T extends Entity, R> {
     private final Class<T> entityClass;
     private final Class<R> returnClass;
-
-    // https://jdbc.postgresql.org/documentation/query/
 
 
     // BECAREFUL USING THIS! MAY BE VULNARABLE TO SQL INJECTION
     public R RawQuery(String query){
         Connection conn = this.dbConnect();
 
-        R returnObjInstance = this.getNewReturnClassInstance();
+        ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
 
         try{
             PreparedStatement st = conn.prepareStatement(query);
@@ -30,7 +29,6 @@ public class Query<T extends Entity, R> {
             ResultSet rs = st.executeQuery();
             ResultSetMetaData resultSetMetaData = rs.getMetaData();
 
-            List<String> result = new ArrayList<>();
             if(!rs.next()){
                 throw new EntityNotFoundException();
             }
@@ -40,42 +38,16 @@ public class Query<T extends Entity, R> {
                 String columnName = resultSetMetaData.getColumnName(i);
 
                 Object value = this.getColumnValueWithCorrespondentType(rs, columnType, i);
-                this.fillEntityInstance(returnObjInstance, value, columnName);
+                returnClassHandler.fillEntityInstance(value, columnName);
             }
 
             st.close();
             rs.close();
             conn.close();
 
-            return returnObjInstance;
+            return returnClassHandler.getReturnClassInstance();
         }catch (SQLException e){
             throw new RuntimeException("Error creating statement: ", e);
-        }
-    }
-
-
-    //public <T extends returnClass> findById(){
-    //    a
-    //}
-
-
-    @SuppressWarnings("unchecked")
-    private R getNewReturnClassInstance(){
-        try{
-            return returnClass.getDeclaredConstructor().newInstance();
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private <X> void fillEntityInstance(R returnObj, X value, String columnName){
-        try{
-            Field field = returnObj.getClass().getDeclaredField(columnName);
-            field.setAccessible(true);
-            field.set(returnObj, value);
-        } catch (NoSuchFieldException ignored) {
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
         }
     }
 
