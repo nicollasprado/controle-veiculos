@@ -2,12 +2,11 @@ package com.nicollasprado.db;
 
 import com.nicollasprado.Exceptions.InvalidQueryType;
 import com.nicollasprado.abstraction.Entity;
-import com.nicollasprado.db.utils.EntityUtils;
-import com.nicollasprado.db.utils.StatementUtils;
+import com.nicollasprado.utils.AnnotationHandler;
+import com.nicollasprado.utils.EntityUtils;
+import com.nicollasprado.utils.StatementUtils;
 
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.*;
 
 import java.sql.*;
@@ -22,7 +21,7 @@ public class Query<T extends Entity, R> {
 
 
     public void save(T entity){
-        List<Field> columnFields = EntityUtils.getColumnFields(entityClass);
+        List<Field> columnFields = AnnotationHandler.getColumnFields(entityClass);
 
         StringBuilder columnsNames = new StringBuilder("(");
         for(int i = 0; i < columnFields.size(); i++){
@@ -42,34 +41,31 @@ public class Query<T extends Entity, R> {
             }
         }
 
-        String query = "INSERT INTO " + this.entityName + " " + columnsNames + " VALUES " + paramsEntries + ";";
+        String query = "INSERT INTO " + entityName + " " + columnsNames + " VALUES " + paramsEntries + ";";
 
         List<Object> params = new ArrayList<>();
         columnFields.forEach(field -> params.add(EntityUtils.getColumnValue(field, entity)));
 
-        refinedTransactionalQuery(query, params);
+        this.refinedTransactionalQuery(query, params);
     }
 
     public <X> R findById(X id){
-        return refinedGetQuery("SELECT * FROM " + this.entityName + " WHERE " + idField.getName() + " = ? LIMIT 1", List.of(id));
+        return refinedGetQuery("SELECT * FROM " + entityName + " WHERE " + idField.getName() + " = ? LIMIT 1", List.of(id));
     }
 
 
 
     private void refinedTransactionalQuery(String query, List<?> parameters){
-        Connection conn = this.dbConnect();
-
-        PreparedStatement statement = StatementUtils.getValidStatement(conn, query, parameters);
+        PreparedStatement statement = StatementUtils.getValidStatement(DbConnectionHandler.db, query, parameters);
 
         try{
-            conn.setAutoCommit(false);
             String upperQuery = query.toUpperCase();
             if(upperQuery.contains("UPDATE") || upperQuery.contains("DELETE") || upperQuery.contains("INSERT")){
                 statement.executeUpdate();
-                conn.commit();
+                DbConnectionHandler.db.commit();
             }
 
-            conn.close();
+            DbConnectionHandler.db.close();
             statement.close();
         } catch (SQLException e) {
             throw new RuntimeException("Error while saving entity: " + e);
@@ -77,9 +73,7 @@ public class Query<T extends Entity, R> {
     }
 
     private R refinedGetQuery(String query, List<?> parameters){
-        Connection conn = this.dbConnect();
-
-        PreparedStatement statement = StatementUtils.getValidStatement(conn, query, parameters);
+        PreparedStatement statement = StatementUtils.getValidStatement(DbConnectionHandler.db, query, parameters);
 
         ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
 
@@ -92,7 +86,6 @@ public class Query<T extends Entity, R> {
 
                 statement.close();
                 fetchResult.close();
-                conn.close();
 
                 return returnClassHandler.getReturnClassInstance();
             }
@@ -105,19 +98,16 @@ public class Query<T extends Entity, R> {
 
     // BECAREFUL USING THIS! MAY BE VULNARABLE TO SQL INJECTION
     public R RawQuery(String query){
-        Connection conn = this.dbConnect();
-
         ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
 
         try{
-            PreparedStatement st = conn.prepareStatement(query);
+            PreparedStatement st = DbConnectionHandler.db.prepareStatement(query);
             ResultSet rs = st.executeQuery();
 
             returnClassHandler.databaseDataToEntityInstance(rs);
 
             st.close();
             rs.close();
-            conn.close();
 
             return returnClassHandler.getReturnClassInstance();
         }catch (SQLException e){
@@ -126,26 +116,13 @@ public class Query<T extends Entity, R> {
     }
 
 
-    private Connection dbConnect(){
-        try{
-            String url = "jdbc:postgresql://localhost:5432/vehicles_control";
-            Properties props = new Properties();
-            props.setProperty("user", "postgres");
-            props.setProperty("password", "");
-
-            return DriverManager.getConnection(url, props);
-        }catch (SQLException e){
-            throw new RuntimeException("Error connection to database: ", e);
-        }
-    }
-
 
     @SuppressWarnings("unchecked")
     public Query(Class<T> entityClass){
         this.entityClass = entityClass;
         this.returnClass = (Class<R>) entityClass;
-        this.idField = EntityUtils.getIdField(entityClass);
-        this.entityName = EntityUtils.getEntityName(entityClass);
+        this.idField = AnnotationHandler.getIdField(entityClass);
+        this.entityName = AnnotationHandler.getEntityName(entityClass);
     }
 
     // TODO - CREATE WAY TO WORK WITH RECORDS
