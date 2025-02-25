@@ -16,7 +16,7 @@ import java.sql.*;
 public class Query<T, R> implements Persistence<T, R> {
     private final Class<T> entityClass;
     private final Class<R> returnClass;
-    private final Field idField;
+    private final Field entityId;
     private final String entityName;
 
 
@@ -31,7 +31,7 @@ public class Query<T, R> implements Persistence<T, R> {
 
     @Override
     public <X> R findById(X id){
-        return refinedGetQuery("SELECT * FROM " + entityName + " WHERE " + idField.getName() + " = ? LIMIT 1", List.of(id));
+        return refinedGetQuery("SELECT * FROM " + entityName + " WHERE " + entityId.getName() + " = ? LIMIT 1", List.of(id));
     }
 
     @Override
@@ -123,14 +123,8 @@ public class Query<T, R> implements Persistence<T, R> {
     public Query(Class<T> entityClass){
         this.entityClass = entityClass;
         this.returnClass = (Class<R>) entityClass;
-        this.idField = AnnotationHandler.getIdField(entityClass);
+        this.entityId = AnnotationHandler.getIdField(entityClass);
         this.entityName = AnnotationHandler.getEntityName(entityClass);
     }
 
-
-    // TODO - CREATE WAY TO WORK WITH RECORDS
-//    public Query(Class<T> entityClass, Class<R> returnClass){
-//        this.entityClass = entityClass;
-//        this.returnClass = returnClass;
-//    }
 }
