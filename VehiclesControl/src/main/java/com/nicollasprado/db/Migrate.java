@@ -34,7 +34,6 @@ public class Migrate {
             try{
                 Class<?> model = Class.forName("com.nicollasprado.model." + className);
                 if(model.isAnnotationPresent(Entity.class)){
-                    // TODO - FINALIZE THIS MIGRATE FUNCTION + CREATE ANNOTATIONS TO NOT NULL ETC
                     System.out.println(model.getSimpleName());
                     createTable(model);
                 }

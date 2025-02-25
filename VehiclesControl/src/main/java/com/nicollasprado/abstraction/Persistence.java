@@ -1,7 +1,9 @@
 package com.nicollasprado.abstraction;
 
-public interface Persistence<T extends Entity> {
-    //T save();
-    //T findById();
-    //T findAll();
+import java.util.List;
+
+public interface Persistence<T, R> {
+    void save(T entity);
+    <X> R findById(X id);
+    List<R> findAll();
 }

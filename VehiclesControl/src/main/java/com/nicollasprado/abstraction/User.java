@@ -1,5 +1,6 @@
 package com.nicollasprado.abstraction;
 
+import com.nicollasprado.annotations.Column;
 import com.nicollasprado.enums.UserRole;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,13 +11,10 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public abstract class User extends Entity {
-    private String username;
+public abstract class User {
     private UserRole userRole;
 
-    public User(String username, UserRole role) {
-        super();
-        this.username = username;
+    public User(UserRole role) {
         this.userRole = role;
     }
 }

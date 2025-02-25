@@ -12,8 +12,8 @@ import lombok.Setter;
 public class Driver extends User {
     private String cpf;
 
-    public Driver(String name, String cpf) {
-        super(name, UserRole.Driver);
+    public Driver(String cpf) {
+        super(UserRole.Driver);
         this.cpf = cpf;
     }
 }

@@ -1,9 +1,9 @@
 package com.nicollasprado.db;
 
+import com.nicollasprado.Exceptions.EntityNotFoundException;
 import com.nicollasprado.Exceptions.InvalidQueryType;
-import com.nicollasprado.abstraction.Entity;
+import com.nicollasprado.abstraction.Persistence;
 import com.nicollasprado.utils.AnnotationHandler;
-import com.nicollasprado.utils.EntityUtils;
 import com.nicollasprado.utils.StatementUtils;
 
 import java.lang.reflect.Field;
@@ -13,44 +13,42 @@ import java.sql.*;
 
 // https://jdbc.postgresql.org/documentation/query/
 
-public class Query<T extends Entity, R> {
+public class Query<T, R> implements Persistence<T, R> {
     private final Class<T> entityClass;
     private final Class<R> returnClass;
     private final Field idField;
     private final String entityName;
 
 
+    @Override
     public void save(T entity){
         List<Field> columnFields = AnnotationHandler.getColumnFields(entityClass);
-
-        StringBuilder columnsNames = new StringBuilder("(");
-        for(int i = 0; i < columnFields.size(); i++){
-            if(i == columnFields.size() - 1){
-                columnsNames.append(EntityUtils.getColumnFieldName(columnFields.get(i))).append(")");
-            }else{
-                columnsNames.append(EntityUtils.getColumnFieldName(columnFields.get(i))).append(", ");
-            }
-        }
-
-        StringBuilder paramsEntries = new StringBuilder("(");
-        for(int i = 0; i < columnFields.size(); i++){
-            if(i == columnFields.size() - 1){
-                paramsEntries.append("?)");
-            }else{
-                paramsEntries.append("?, ");
-            }
-        }
-
-        String query = "INSERT INTO " + entityName + " " + columnsNames + " VALUES " + paramsEntries + ";";
-
-        List<Object> params = new ArrayList<>();
-        columnFields.forEach(field -> params.add(EntityUtils.getColumnValue(field, entity)));
+        String query = StatementUtils.prepareRefinedQueryNoId(columnFields, entityName);
+        List<Object> params = StatementUtils.getValidParamsNoId(columnFields, entity);
 
         this.refinedTransactionalQuery(query, params);
     }
 
+    @Override
     public <X> R findById(X id){
         return refinedGetQuery("SELECT * FROM " + entityName + " WHERE " + idField.getName() + " = ? LIMIT 1", List.of(id));
+    }
+
+    @Override
+    public List<R> findAll() {
+        ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
+
+        try{
+            Statement statement = DbConnectionHandler.db.createStatement();
+            statement.setFetchSize(50);
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM " + entityName + ";");
+
+            returnClassHandler.resolveMany(resultSet);
+
+            return returnClassHandler.getReturnClassList();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while running findAll: " + e);
+        }
     }
 
 
@@ -82,6 +80,10 @@ public class Query<T extends Entity, R> {
             if(!upperQuery.contains("UPDATE") && !upperQuery.contains("DELETE") && !upperQuery.contains("INSERT")){
                 ResultSet fetchResult = statement.executeQuery();
 
+                if (!fetchResult.next()) {
+                    throw new EntityNotFoundException();
+                }
+
                 returnClassHandler.databaseDataToEntityInstance(fetchResult);
 
                 statement.close();
@@ -97,7 +99,7 @@ public class Query<T extends Entity, R> {
     }
 
     // BECAREFUL USING THIS! MAY BE VULNARABLE TO SQL INJECTION
-    public R RawQuery(String query){
+    public R rawGetQuery(String query){
         ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
 
         try{
@@ -124,6 +126,7 @@ public class Query<T extends Entity, R> {
         this.idField = AnnotationHandler.getIdField(entityClass);
         this.entityName = AnnotationHandler.getEntityName(entityClass);
     }
+
 
     // TODO - CREATE WAY TO WORK WITH RECORDS
 //    public Query(Class<T> entityClass, Class<R> returnClass){

@@ -1,7 +1,7 @@
 package com.nicollasprado.db;
 
 import com.nicollasprado.Exceptions.EntityNotFoundException;
-import com.nicollasprado.db.utils.ColumnUtil;
+import com.nicollasprado.utils.EntityUtils;
 import lombok.Getter;
 
 import java.lang.reflect.Field;
@@ -9,10 +9,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 public class ReturnClassHandler<R> {
-    private final R returnClassInstance;
+    private R returnClassInstance;
+    private final List<R> returnClassList;
+    private final Class<R> returnClass;
 
     private R getNewReturnClassInstance(Class<R> returnClass){
         try{
@@ -26,18 +30,14 @@ public class ReturnClassHandler<R> {
         try {
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
-            if (!resultSet.next()) {
-                throw new EntityNotFoundException();
-            }
-
             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                 int columnType = resultSetMetaData.getColumnType(i);
                 String columnName = resultSetMetaData.getColumnName(i);
 
-                Object value = ColumnUtil.getColumnValueWithCorrespondentType(resultSet, columnType, i);
+                Object value = EntityUtils.getColumnValueWithCorrespondentType(resultSet, columnType, i);
                 this.fillEntityInstance(value, columnName);
-
             }
+
         }catch (SQLException e) {
             throw new RuntimeException("Error converting database data to entity instance: " + e);
         }
@@ -54,8 +54,29 @@ public class ReturnClassHandler<R> {
         }
     }
 
+    public void resolveMany(ResultSet resultSet){
+        try{
+            boolean first = true;
+
+            while(resultSet.next()){
+                first = false;
+                databaseDataToEntityInstance(resultSet);
+                returnClassList.add(this.returnClassInstance);
+                this.returnClassInstance = getNewReturnClassInstance(returnClass);
+            }
+
+            if(first){
+                throw new EntityNotFoundException();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while resolving many return classes: " + e);
+        }
+    }
+
 
     public ReturnClassHandler(Class<R> returnClass){
         this.returnClassInstance = this.getNewReturnClassInstance(returnClass);
+        this.returnClassList = new ArrayList<>();
+        this.returnClass = returnClass;
     }
 }
