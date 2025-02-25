@@ -51,6 +51,54 @@ public class Query<T, R> implements Persistence<T, R> {
         }
     }
 
+    public R findBy(List<?> params, List<?> values){
+        StringBuilder query = new StringBuilder("Select * FROM " + entityName + " ");
+        for(int i=0; i < params.size(); i++){
+            if(i == 0){
+                query.append("WHERE ")
+                        .append(params.get(i))
+                        .append("=? ");
+            } else {
+                query.append("AND ")
+                        .append(params.get(i))
+                        .append("=? ");
+            }
+
+        }
+        query.append("LIMIT 1");
+
+        return refinedGetQuery(query.toString(), values);
+    }
+
+    public List<R> findAllBy(List<?> params, List<?> values){
+        StringBuilder query = new StringBuilder("Select * FROM " + entityName + " ");
+        for(int i=0; i < params.size(); i++){
+            if(i == 0){
+                query.append("WHERE ")
+                        .append(params.get(i))
+                        .append("=? ");
+            } else {
+                query.append("AND ")
+                        .append(params.get(i))
+                        .append("=? ");
+            }
+
+        }
+
+        ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
+        try{
+            Statement statement = DbConnectionHandler.db.createStatement();
+            statement.setFetchSize(50);
+            ResultSet resultSet = statement.executeQuery(query.toString());
+
+            returnClassHandler.resolveMany(resultSet);
+
+            return returnClassHandler.getReturnClassList();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error while running findAllBy: " + e);
+        }
+    }
+
 
 
     private void refinedTransactionalQuery(String query, List<?> parameters){
