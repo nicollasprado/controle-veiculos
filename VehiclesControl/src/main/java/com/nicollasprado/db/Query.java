@@ -30,12 +30,12 @@ public class Query<T, R> implements Persistence<T, R> {
     }
 
     @Override
-    public <X> R findById(X id){
+    public <X> Optional<R> findById(X id){
         return refinedGetQuery("SELECT * FROM " + entityName + " WHERE " + entityId.getName() + " = ? LIMIT 1", List.of(id));
     }
 
     @Override
-    public List<R> findAll() {
+    public Optional<List<R>> findAll() {
         ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
 
         try{
@@ -45,13 +45,15 @@ public class Query<T, R> implements Persistence<T, R> {
 
             returnClassHandler.resolveMany(resultSet);
 
-            return returnClassHandler.getReturnClassList();
+            return Optional.of(returnClassHandler.getReturnClassList());
         } catch (SQLException e) {
             throw new RuntimeException("Error while running findAll: " + e);
+        } catch (EntityNotFoundException ex){
+            return Optional.empty();
         }
     }
 
-    public R findBy(List<?> params, List<?> values){
+    public Optional<R> findBy(List<?> params, List<?> values){
         StringBuilder query = new StringBuilder("Select * FROM " + entityName + " ");
         for(int i=0; i < params.size(); i++){
             if(i == 0){
@@ -118,7 +120,7 @@ public class Query<T, R> implements Persistence<T, R> {
         }
     }
 
-    private R refinedGetQuery(String query, List<?> parameters){
+    private Optional<R> refinedGetQuery(String query, List<?> parameters){
         PreparedStatement statement = StatementUtils.getValidStatement(DbConnectionHandler.db, query, parameters);
 
         ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
@@ -129,7 +131,7 @@ public class Query<T, R> implements Persistence<T, R> {
                 ResultSet fetchResult = statement.executeQuery();
 
                 if (!fetchResult.next()) {
-                    throw new EntityNotFoundException();
+                    return Optional.empty();
                 }
 
                 returnClassHandler.databaseDataToEntityInstance(fetchResult);
@@ -137,7 +139,7 @@ public class Query<T, R> implements Persistence<T, R> {
                 statement.close();
                 fetchResult.close();
 
-                return returnClassHandler.getReturnClassInstance();
+                return Optional.of(returnClassHandler.getReturnClassInstance());
             }
 
             throw new InvalidQueryType(query);
