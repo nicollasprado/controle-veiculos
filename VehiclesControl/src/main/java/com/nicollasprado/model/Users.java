@@ -8,21 +8,25 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Set;
 import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-public class Vehicle {
+public class Users {
     @Id(strategy = IdStrategy.UUID)
     private UUID id;
 
     @Column(nullable = false)
-    private String name;
+    private String username;
 
-    public Vehicle(String name) {
-        this.name = name;
+    @Column(nullable = false)
+    private String password;
+
+
+    public Users(String username, String password) {
+        this.username = username;
+        this.password = password;
     }
 }
