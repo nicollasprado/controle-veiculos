@@ -2,9 +2,12 @@ package com.nicollasprado.utils;
 
 import com.nicollasprado.annotations.Column;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class EntityUtils {
 
@@ -64,8 +67,12 @@ public class EntityUtils {
             return "VARCHAR";
         } else if (fieldType == java.util.Date.class || fieldType == java.sql.Date.class) {
             return "DATE";
-        } else if (fieldType == java.sql.Timestamp.class) {
+        } else if (fieldType == java.sql.Timestamp.class || fieldType == LocalDateTime.class) {
             return "TIMESTAMP";
+        } else if(fieldType == BigDecimal.class){
+            return "DECIMAL";
+        } else if (fieldType == UUID.class) {
+            return "UUID";
         }
 
         throw new IllegalArgumentException("Unsuported data type: " + fieldType.getName());
