@@ -3,21 +3,19 @@ package com.nicollasprado.model;
 import com.nicollasprado.annotations.Column;
 import com.nicollasprado.annotations.Entity;
 import com.nicollasprado.annotations.Id;
-import com.nicollasprado.enums.IdStrategy;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 public class Route {
-    @Id(strategy = IdStrategy.UUID)
-    private UUID id;
+    @Id
+    private int id;
 
     @Column(name = "start_location", nullable = false)
     private String startLocation;

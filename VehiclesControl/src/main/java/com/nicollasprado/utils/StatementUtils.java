@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class StatementUtils {
 
@@ -74,6 +75,7 @@ public class StatementUtils {
                 case Float v -> statement.setFloat(index, v);
                 case LocalDateTime localDateTime -> statement.setTimestamp(index, Timestamp.valueOf(localDateTime));
                 case LocalDate localDate -> statement.setDate(index, Date.valueOf(localDate));
+                case UUID uuid -> statement.setObject(index, uuid, Types.OTHER);
                 default -> {
                 }
             }
