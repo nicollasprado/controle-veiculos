@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,7 +23,14 @@ public class Vehicle {
     @Column(nullable = false)
     private String name;
 
+    private List<Route> routes;
+
     public Vehicle(String name) {
         this.name = name;
+    }
+
+    public Vehicle(String name, List<Route> routes) {
+        this.name = name;
+        this.routes = routes;
     }
 }
