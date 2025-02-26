@@ -113,9 +113,13 @@ public class Query<T, R> implements Persistence<T, R> {
                 DbConnectionHandler.db.commit();
             }
 
-            DbConnectionHandler.db.close();
             statement.close();
         } catch (SQLException e) {
+            try{
+                DbConnectionHandler.db.rollback();
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             throw new RuntimeException("Error while saving entity: " + e);
         }
     }
