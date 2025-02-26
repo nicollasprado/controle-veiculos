@@ -1,43 +1,61 @@
 package com.nicollasprado.db;
 
 import com.nicollasprado.annotations.Entity;
+import com.nicollasprado.enums.MigrateTableExistConfig;
 import com.nicollasprado.utils.AnnotationHandler;
 import com.nicollasprado.utils.EntityUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Scanner;
 
-public class Migrate {
+public abstract class Migrate {
+    private static final MigrateTableExistConfig TABLE_EXISTENCE = MigrateTableExistConfig.CREATE_NEW;
+
     public static void main(String[] args) {
         String currentDir = new File("").getAbsolutePath();
         Path modelsDir = Paths.get(currentDir + "/VehiclesControl/src/main/java/com/nicollasprado/model");
 
         try{
-            Files.walk(modelsDir).forEach(path -> iterateFiles(path.toFile()));
+            Scanner input = new Scanner(System.in);
+            System.out.print("Digite o nome da migration: ");
+            String migrationName = input.nextLine();
+            migrationName = migrationName.replaceAll("\\s", "_");
+
+            LocalDateTime dateTime = LocalDateTime.now();
+            Path migrationFilePath = Path.of(new File("").getAbsolutePath() + "/VehiclesControl/src/main/java/com/nicollasprado/db/migrations/" +
+                    dateTime.getYear() +
+                    dateTime.getDayOfMonth() +
+                    dateTime.getMonthValue() + "-" +
+                    dateTime.getHour() +
+                    dateTime.getMinute() + "-" +
+                    migrationName
+                    + ".txt"
+            );
+
+            Files.walk(modelsDir).forEach(path -> iterateFiles(path.toFile(), migrationFilePath));
         } catch (IOException e) {
             throw new RuntimeException("Invalid models path: " + e.getMessage());
         }
     }
 
 
-    private static void iterateFiles(File file){
+    private static void iterateFiles(File file, Path migrationFilePath){
         if(file.isFile()){
             String className = file.getName().replace(".java", "");
 
             try{
                 Class<?> model = Class.forName("com.nicollasprado.model." + className);
                 if(model.isAnnotationPresent(Entity.class)){
-                    System.out.println(model.getSimpleName());
                     createTable(model);
+                    createSchemaFile(model, migrationFilePath);
                 }
-
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Model class not found: " + e.getMessage());
             }
@@ -78,14 +96,89 @@ public class Migrate {
 
         System.out.println(query);
 
+        String sqlStatus = sendRequest(query.toString());
+
+        // table already exists
+        if(sqlStatus.equals("42P07")){
+            switch(Migrate.TABLE_EXISTENCE){
+                case UPDATE:
+                    handleTableUpdate();
+                    break;
+                case CREATE_NEW:
+                    System.out.println("TODO - create new");
+                    break;
+            }
+
+        }else if(sqlStatus.isBlank()){
+            // do nothing
+        } else{
+            throw new RuntimeException("Error creating table in migration, SQL STATUS " + sqlStatus);
+        }
+    }
+
+
+    private static void handleCreateNewTable(String tableName){
+        // alter actual table name
+    }
+
+
+    private static void handleTableUpdate(){
+        System.out.println("todo handle update table");
+    }
+
+
+    // return SQL error status
+    private static String sendRequest(String query) {
+        Statement statement = null;
         try{
-            Statement statement = DbConnectionHandler.db.createStatement();
-            statement.executeUpdate(query.toString());
+            statement = DbConnectionHandler.db.createStatement();
+            statement.executeUpdate(query);
             DbConnectionHandler.db.commit();
 
-            statement.close();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error creating table in migration: " + e.getMessage());
+            return "";
+        }catch (SQLException e){
+            try{
+                DbConnectionHandler.db.rollback();
+            } catch (SQLException ex) {
+                e.addSuppressed(ex);
+            }
+            return e.getSQLState();
+        }finally {
+            if(statement != null){
+                try{
+                    statement.close();
+                } catch (SQLException e) {
+                    System.err.println("Error closing statement: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+
+    private static void createSchemaFile(Class<?> entity, Path migrationFilePath){
+        try{
+            if(Files.exists(migrationFilePath)){
+                Files.writeString(migrationFilePath, "\n", StandardOpenOption.APPEND);
+            }else{
+                Files.createFile(migrationFilePath);
+            }
+
+
+            Files.writeString(migrationFilePath, "TABLE " + AnnotationHandler.getEntityName(entity) + "\n", StandardOpenOption.APPEND);
+
+            List<Field> columnFields = AnnotationHandler.getColumnFields(entity);
+            for (Field columnField : columnFields) {
+                String fieldName = columnField.getName();
+                String sqlType = EntityUtils.getSqlTypeByField(columnField);
+                String columnDetails = AnnotationHandler.getColumnDetails(columnField);
+
+                String column = "COLUMN " + fieldName + " " + sqlType + " " + columnDetails + "\n";
+
+                Files.writeString(migrationFilePath, column, StandardOpenOption.APPEND);
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException("Error creating migration file: " + e);
         }
     }
 
