@@ -2,6 +2,7 @@ package com.nicollasprado.utils;
 
 import com.nicollasprado.annotations.Column;
 import com.nicollasprado.annotations.Id;
+import com.nicollasprado.db.DbConnectionHandler;
 
 import java.lang.reflect.Field;
 import java.sql.*;
@@ -49,9 +50,9 @@ public class StatementUtils {
         return ("INSERT INTO " + entityName + " " + columnsNames + " VALUES " + paramsEntries + ";");
     }
 
-    public static PreparedStatement getValidStatement(Connection conn, String query, List<?> parameters){
+    public static PreparedStatement getValidStatement(String query, List<?> parameters){
         try{
-            PreparedStatement statement = conn.prepareStatement(query);
+            PreparedStatement statement = DbConnectionHandler.db.prepareStatement(query);
 
             for(int i = 1; i <= parameters.size(); i++){
                 StatementUtils.addStatementValue(statement, i, parameters.get(i-1));

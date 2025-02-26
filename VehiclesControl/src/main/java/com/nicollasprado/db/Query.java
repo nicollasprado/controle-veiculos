@@ -72,7 +72,7 @@ public class Query<T, R> implements Persistence<T, R> {
         return refinedGetQuery(query.toString(), values);
     }
 
-    public List<R> findAllBy(List<?> params, List<?> values){
+    public Optional<List<R>> findAllBy(List<?> params, List<?> values){
         StringBuilder query = new StringBuilder("Select * FROM " + entityName + " ");
         for(int i=0; i < params.size(); i++){
             if(i == 0){
@@ -84,18 +84,23 @@ public class Query<T, R> implements Persistence<T, R> {
                         .append(params.get(i))
                         .append("=? ");
             }
-
         }
 
         ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
         try{
-            Statement statement = DbConnectionHandler.db.createStatement();
+            PreparedStatement statement = StatementUtils.getValidStatement(query.toString(), values);
             statement.setFetchSize(50);
-            ResultSet resultSet = statement.executeQuery(query.toString());
+            ResultSet resultSet = statement.executeQuery();
+
 
             returnClassHandler.resolveMany(resultSet);
 
-            return returnClassHandler.getReturnClassList();
+            List<?> fetchResult = returnClassHandler.getReturnClassList();
+            if(fetchResult.isEmpty()){
+                return Optional.empty();
+            }
+
+            return Optional.of(returnClassHandler.getReturnClassList());
         } catch (SQLException e) {
             throw new RuntimeException("Error while running findAllBy: " + e);
         }
@@ -104,7 +109,7 @@ public class Query<T, R> implements Persistence<T, R> {
 
 
     private void refinedTransactionalQuery(String query, List<?> parameters){
-        PreparedStatement statement = StatementUtils.getValidStatement(DbConnectionHandler.db, query, parameters);
+        PreparedStatement statement = StatementUtils.getValidStatement(query, parameters);
 
         try{
             String upperQuery = query.toUpperCase();
@@ -125,7 +130,7 @@ public class Query<T, R> implements Persistence<T, R> {
     }
 
     private Optional<R> refinedGetQuery(String query, List<?> parameters){
-        PreparedStatement statement = StatementUtils.getValidStatement(DbConnectionHandler.db, query, parameters);
+        PreparedStatement statement = StatementUtils.getValidStatement(query, parameters);
 
         ReturnClassHandler<R> returnClassHandler = new ReturnClassHandler<>(returnClass);
 
