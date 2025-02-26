@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public abstract class Migrate {
-    private static final MigrateTableExistConfig TABLE_EXISTENCE = MigrateTableExistConfig.CREATE_NEW;
+    private static final MigrateTableExistConfig TABLE_EXISTENCE = MigrateTableExistConfig.DROP_AND_CREATE_NEW;
 
     public static void main(String[] args) {
         String currentDir = new File("").getAbsolutePath();
@@ -98,6 +98,7 @@ public abstract class Migrate {
 
         String sqlStatus = sendRequest(query.toString());
 
+        System.out.println(sqlStatus);
         // table already exists
         if(sqlStatus.equals("42P07")){
             switch(Migrate.TABLE_EXISTENCE){
@@ -107,6 +108,8 @@ public abstract class Migrate {
                 case CREATE_NEW:
                     System.out.println("TODO - create new");
                     break;
+                case DROP_AND_CREATE_NEW:
+                    handleDropAndCreateNewTable(tableName, query.toString());
             }
 
         }else if(sqlStatus.isBlank()){
@@ -116,6 +119,11 @@ public abstract class Migrate {
         }
     }
 
+
+    private static void handleDropAndCreateNewTable(String tableName, String query){
+        sendRequest("drop table if exists " + tableName + " cascade;");
+        sendRequest(query);
+    }
 
     private static void handleCreateNewTable(String tableName){
         // alter actual table name
@@ -142,6 +150,8 @@ public abstract class Migrate {
             } catch (SQLException ex) {
                 e.addSuppressed(ex);
             }
+
+            System.out.println(e.getMessage());
             return e.getSQLState();
         }finally {
             if(statement != null){
