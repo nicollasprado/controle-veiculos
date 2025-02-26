@@ -73,7 +73,7 @@ public abstract class Migrate {
         AnnotationHandler.getIdField(entity);
 
         for(int i=0; i < columnFields.size(); i++){
-            String fieldName = columnFields.get(i).getName();
+            String fieldName = EntityUtils.getColumnFieldName(columnFields.get(i));
             String sqlType = EntityUtils.getSqlTypeByField(columnFields.get(i));
             String columnDetails = AnnotationHandler.getColumnDetails(columnFields.get(i));
 
@@ -94,11 +94,7 @@ public abstract class Migrate {
             }
         }
 
-        System.out.println(query);
-
         String sqlStatus = sendRequest(query.toString());
-
-        System.out.println(sqlStatus);
         // table already exists
         if(sqlStatus.equals("42P07")){
             switch(Migrate.TABLE_EXISTENCE){
@@ -150,8 +146,6 @@ public abstract class Migrate {
             } catch (SQLException ex) {
                 e.addSuppressed(ex);
             }
-
-            System.out.println(e.getMessage());
             return e.getSQLState();
         }finally {
             if(statement != null){
@@ -178,7 +172,7 @@ public abstract class Migrate {
 
             List<Field> columnFields = AnnotationHandler.getColumnFields(entity);
             for (Field columnField : columnFields) {
-                String fieldName = columnField.getName();
+                String fieldName = EntityUtils.getColumnFieldName(columnField);
                 String sqlType = EntityUtils.getSqlTypeByField(columnField);
                 String columnDetails = AnnotationHandler.getColumnDetails(columnField);
 

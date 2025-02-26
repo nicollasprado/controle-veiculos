@@ -1,6 +1,8 @@
 package com.nicollasprado.utils;
 
 import com.nicollasprado.annotations.Column;
+import com.nicollasprado.annotations.Id;
+
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -12,7 +14,13 @@ import java.util.UUID;
 public class EntityUtils {
 
     public static String getColumnFieldName(Field field){
-        String columnName = field.getAnnotation(Column.class).name();
+        String columnName;
+        if(field.isAnnotationPresent(Column.class)){
+            columnName = field.getAnnotation(Column.class).name();
+        }else{
+            columnName = field.getAnnotation(Id.class).name();
+        }
+
         return columnName.isEmpty() ? field.getName().toLowerCase() : columnName;
     }
 
@@ -39,6 +47,7 @@ public class EntityUtils {
                 case Types.BOOLEAN -> queryResult.getBoolean(columnIndex);
                 case Types.SMALLINT -> queryResult.getShort(columnIndex);
                 case Types.TINYINT -> queryResult.getByte(columnIndex);
+                case Types.OTHER -> queryResult.getObject(columnIndex);
                 default -> null;
             };
         } catch (SQLException e) {
