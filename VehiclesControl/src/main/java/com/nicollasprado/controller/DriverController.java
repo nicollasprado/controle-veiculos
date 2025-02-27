@@ -1,5 +1,6 @@
 package com.nicollasprado.controller;
 
+import com.nicollasprado.abstraction.UserInterface;
 import com.nicollasprado.db.Query;
 import com.nicollasprado.model.Driver;
 
@@ -17,7 +18,7 @@ public abstract class DriverController {
             System.out.println("\n============================");
             System.out.println("| Sistema Controle de veiculos");
             System.out.println("| Motoristas:\n" +
-                    "0- Sair\n" +
+                    "0- Voltar\n" +
                     "1- Registrar novo motorista\n" +
                     "2- Consultar motorista especifico\n" +
                     "3- Listar motoristas\n"
@@ -35,6 +36,8 @@ public abstract class DriverController {
                     break;
             }
         } while(!(command = input.nextLine()).equals("0"));
+
+        UserInterface.chooseCategory(input);
     }
 
     private static void registerDriver(Scanner input){

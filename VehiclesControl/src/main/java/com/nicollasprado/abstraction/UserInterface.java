@@ -1,6 +1,8 @@
 package com.nicollasprado.abstraction;
 
 import com.nicollasprado.controller.DriverController;
+import com.nicollasprado.controller.MaintenanceController;
+import com.nicollasprado.controller.RouteController;
 import com.nicollasprado.controller.VehicleController;
 import com.nicollasprado.db.Query;
 import com.nicollasprado.model.Driver;
@@ -38,7 +40,7 @@ public abstract class UserInterface{
         return found.isPresent();
     }
 
-    private static void chooseCategory(Scanner input){
+    public static void chooseCategory(Scanner input){
         String command = "";
         do{
             System.out.println("\n============================");
@@ -57,6 +59,10 @@ public abstract class UserInterface{
                     break;
                 case "2":
                     DriverController.driverCategory(input);
+                case "3":
+                    RouteController.routeCategory(input);
+                case "4":
+                    MaintenanceController.maintenanceCategory(input);
             }
         } while(!(command = input.nextLine()).equals("0"));
     }

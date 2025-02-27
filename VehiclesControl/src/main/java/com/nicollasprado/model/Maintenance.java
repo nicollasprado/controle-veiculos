@@ -3,14 +3,12 @@ package com.nicollasprado.model;
 import com.nicollasprado.annotations.Column;
 import com.nicollasprado.annotations.Entity;
 import com.nicollasprado.annotations.Id;
-import com.nicollasprado.enums.IdStrategy;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -19,6 +17,7 @@ import java.util.UUID;
 public class Maintenance {
     @Id
     private int id;
+
     @Column(name = "vehicle_name", nullable = false)
     private String vehicleName;
 

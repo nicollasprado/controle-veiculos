@@ -1,5 +1,6 @@
 package com.nicollasprado.controller;
 
+import com.nicollasprado.abstraction.UserInterface;
 import com.nicollasprado.db.Query;
 import com.nicollasprado.model.Route;
 import com.nicollasprado.model.Vehicle;
@@ -20,7 +21,7 @@ public abstract class VehicleController {
             System.out.println("\n============================");
             System.out.println("| Sistema Controle de veiculos");
             System.out.println("| Veiculos:\n" +
-                    "0- Sair\n" +
+                    "0- Voltar\n" +
                     "1- Registrar novo veiculo\n" +
                     "2- Consultar veiculo especifico\n" +
                     "3- Listar veiculos\n"
@@ -38,6 +39,8 @@ public abstract class VehicleController {
                     break;
             }
         } while(!(command = input.nextLine()).equals("0"));
+
+        UserInterface.chooseCategory(input);
     }
 
     private static void registerVehicle(Scanner input){
