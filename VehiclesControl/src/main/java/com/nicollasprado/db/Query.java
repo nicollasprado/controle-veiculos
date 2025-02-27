@@ -11,7 +11,6 @@ import java.util.*;
 
 import java.sql.*;
 
-// https://jdbc.postgresql.org/documentation/query/
 
 public class Query<T, R> implements Persistence<T, R> {
     private final Class<T> entityClass;
@@ -110,6 +109,8 @@ public class Query<T, R> implements Persistence<T, R> {
 
     private void refinedTransactionalQuery(String query, List<?> parameters){
         PreparedStatement statement = StatementUtils.getValidStatement(query, parameters);
+
+        System.out.println(statement);
 
         try{
             String upperQuery = query.toUpperCase();

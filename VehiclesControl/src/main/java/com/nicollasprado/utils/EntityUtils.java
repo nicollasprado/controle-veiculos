@@ -48,6 +48,7 @@ public class EntityUtils {
                 case Types.SMALLINT -> queryResult.getShort(columnIndex);
                 case Types.TINYINT -> queryResult.getByte(columnIndex);
                 case Types.OTHER -> queryResult.getObject(columnIndex);
+                case Types.NUMERIC -> queryResult.getBigDecimal(columnIndex);
                 default -> null;
             };
         } catch (SQLException e) {
@@ -79,7 +80,7 @@ public class EntityUtils {
         } else if (fieldType == java.sql.Timestamp.class || fieldType == LocalDateTime.class) {
             return "TIMESTAMP";
         } else if(fieldType == BigDecimal.class){
-            return "DECIMAL";
+            return "NUMERIC";
         } else if (fieldType == UUID.class) {
             return "UUID";
         }

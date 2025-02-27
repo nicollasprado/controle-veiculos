@@ -5,6 +5,7 @@ import com.nicollasprado.annotations.Id;
 import com.nicollasprado.db.DbConnectionHandler;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -74,6 +75,7 @@ public class StatementUtils {
                 case Boolean b -> statement.setBoolean(index, b);
                 case Double v -> statement.setDouble(index, v);
                 case Float v -> statement.setFloat(index, v);
+                case BigDecimal bd -> statement.setBigDecimal(index, bd);
                 case LocalDateTime localDateTime -> statement.setTimestamp(index, Timestamp.valueOf(localDateTime));
                 case LocalDate localDate -> statement.setDate(index, Date.valueOf(localDate));
                 case UUID uuid -> statement.setObject(index, uuid, Types.OTHER);

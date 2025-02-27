@@ -45,10 +45,13 @@ public class ReturnClassHandler<R> {
 
     private <X> void fillEntityInstance(X value, String columnName){
         try{
-            Field field = returnClassInstance.getClass().getDeclaredField(columnName);
-            field.setAccessible(true);
-            field.set(returnClassInstance, value);
-        } catch (NoSuchFieldException ignored) {
+            for(Field field : returnClass.getDeclaredFields()){
+                if(EntityUtils.getColumnFieldName(field).equals(columnName)){
+                    field.setAccessible(true);
+                    field.set(returnClassInstance, value);
+                    break;
+                }
+            }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
